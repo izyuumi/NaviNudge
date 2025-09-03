@@ -3,9 +3,12 @@
 NaviNudge is a minimalist navigation app with a circular interface for quickly launching directions to frequent destinations. Built with SwiftUI and MapKit.
 
 ## Features
+- Minimal UI: no title bar, no gradients
 - Circular destination selector (SF Symbols + labels)
-- One-tap route calculation with ETA
-- Transport modes: driving, walking, transit
+- Drag from source → destination to launch Apple Maps
+- Dynamic path indicator follows your swipe
+- Center "Current Location" node for fast from-here routing
+- Transport modes: driving, walking, transit, biking (deeplink)
 - Open selected route in Apple Maps
 - Location permission + live user location
 
@@ -47,6 +50,6 @@ NaviNudge is a minimalist navigation app with a circular interface for quickly l
 - If files appear grey or builds fail, clean build folder (Shift+⌘+K) and rebuild.
 
 ## Apple Maps Deeplink Routing
-- Tapping a destination opens Apple Maps with a route from current location to the destination.
+- Gesture: press a node to start (center = Current Location or any saved place), drag to another node, then release to open Apple Maps prefilled from → to.
 - Transport picker maps to Apple Maps `dirflg`: `d` (driving), `w` (walking), `r` (transit), `b` (biking).
 - Deeplink format used: `https://maps.apple.com/?saddr=<lat,lon|Current%20Location>&daddr=<lat,lon>&dirflg=<flag>`.
