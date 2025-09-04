@@ -16,7 +16,6 @@ struct ContentView: View {
                     CircularDestinationView()
                 }
             }
-            .navigationTitle("NaviNudge")
         }
         .onAppear {
             if locationManager.authorizationStatus == .notDetermined {

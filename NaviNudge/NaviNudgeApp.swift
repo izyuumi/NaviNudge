@@ -4,6 +4,7 @@ import SwiftUI
 struct NaviNudgeApp: App {
     @StateObject private var destinationManager = DestinationManager()
     @StateObject private var locationManager = LocationManager()
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
         WindowGroup {
@@ -12,4 +13,5 @@ struct NaviNudgeApp: App {
                 .environmentObject(locationManager)
         }
     }
+
 }

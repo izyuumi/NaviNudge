@@ -1,6 +1,7 @@
 import CoreLocation
 import Combine
 
+@MainActor
 final class LocationManager: NSObject, ObservableObject {
     private let manager = CLLocationManager()
 
@@ -11,7 +12,9 @@ final class LocationManager: NSObject, ObservableObject {
         authorizationStatus = manager.authorizationStatus
         super.init()
         manager.delegate = self
-        manager.desiredAccuracy = kCLLocationAccuracyBest
+        manager.desiredAccuracy = kCLLocationAccuracyHundredMeters
+        manager.distanceFilter = 25 // meters; reduce update rate for smoother UI
+        manager.pausesLocationUpdatesAutomatically = true
     }
 
     func requestWhenInUse() {
