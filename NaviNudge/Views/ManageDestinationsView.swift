@@ -5,7 +5,6 @@ import Combine
 
 struct ManageDestinationsView: View {
     @EnvironmentObject private var destinationManager: DestinationManager
-    @EnvironmentObject private var locationManager: LocationManager
     @Environment(\.dismiss) private var dismiss
 
     @State private var name: String = ""
@@ -115,11 +114,6 @@ struct ManageDestinationsView: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     EditButton()
                         .disabled(destinationManager.destinations.isEmpty)
-                }
-            }
-            .onAppear {
-                if let center = locationManager.currentCoordinate {
-                    search.updateRegion(MKCoordinateRegion(center: center, latitudinalMeters: 2500, longitudinalMeters: 2500))
                 }
             }
             .sheet(item: $editingDestination) { dest in
@@ -251,7 +245,6 @@ private struct EditDestinationView: View {
     let destination: Destination
     let onSave: (Destination) -> Void
     @Environment(\.dismiss) private var dismiss
-    @EnvironmentObject private var locationManager: LocationManager
 
     @State private var name: String
     @State private var icon: String
@@ -346,11 +339,6 @@ private struct EditDestinationView: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Save") { save() }
                         .disabled(!isValid)
-                }
-            }
-            .onAppear {
-                if let center = locationManager.currentCoordinate {
-                    search.updateRegion(MKCoordinateRegion(center: center, latitudinalMeters: 2500, longitudinalMeters: 2500))
                 }
             }
         }

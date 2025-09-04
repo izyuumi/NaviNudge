@@ -3,7 +3,6 @@ import UIKit
 
 struct SettingsView: View {
     @EnvironmentObject private var destinationManager: DestinationManager
-    @EnvironmentObject private var locationManager: LocationManager
     @Environment(\.dismiss) private var dismiss
 
     @State private var showingManage = false
@@ -18,17 +17,6 @@ struct SettingsView: View {
                         confirmClear = true
                     } label: {
                         Text("Clear All Destinations")
-                    }
-                }
-
-                Section("Privacy") {
-                    Button {
-                        openAppSettings()
-                    } label: {
-                        HStack {
-                            Image(systemName: "location")
-                            Text("Location Settings")
-                        }
                     }
                 }
 
