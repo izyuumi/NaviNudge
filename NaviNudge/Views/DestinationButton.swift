@@ -5,8 +5,8 @@ struct DestinationButton: View {
 
     var body: some View {
         VStack(spacing: 6) {
-            Image(systemName: destination.icon)
-                .font(.system(size: 28, weight: .semibold))
+            Text(destination.icon)
+                .font(.system(size: 28))
                 .foregroundStyle(.white)
                 .frame(width: 44, height: 44)
                 .background(Circle().fill(.white.opacity(0.15)))
@@ -18,4 +18,3 @@ struct DestinationButton: View {
         .accessibilityLabel(destination.name)
     }
 }
-
