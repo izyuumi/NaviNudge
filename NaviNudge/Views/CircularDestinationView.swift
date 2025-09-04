@@ -117,6 +117,9 @@ private struct RingView: View {
     @State private var hoverEndpoint: Endpoint? = nil
     @State private var hapticsPrepared: Bool = false
     @State private var positionsCache: [Endpoint: CGPoint] = [:]
+    @State private var dragVelocity: CGPoint = .zero
+    @State private var lastDragPoint: CGPoint? = nil
+    @State private var dragStartTime: Date? = nil
 
     var body: some View {
         ZStack {
@@ -189,15 +192,17 @@ private struct RingView: View {
                     if let p = dragPoint { return p }
                     return startPos
                 }()
-                Path { path in
-                    path.move(to: startPos)
-                    path.addLine(to: endPos)
-                }
-                .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
+                
+                // Create a dynamic curved path
+                let (curvePath, curveControlPoint) = createDynamicCurvePath(from: startPos, to: endPos, velocity: dragVelocity)
+                
+                curvePath
+                    .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round))
 
-                // Arrowhead at the end of the line
-                arrowHeadPath(from: startPos, to: endPos, size: 12, width: 9)
+                // Enhanced arrowhead that follows the curve direction
+                enhancedArrowHeadPath(from: startPos, to: endPos, control: curveControlPoint, size: 16, width: 12)
                     .fill(Color.accentColor)
+                    .shadow(color: Color.accentColor.opacity(0.3), radius: 2, x: 0, y: 1)
             }
         }
         // Avoid implicit animations during high-frequency drag updates
@@ -217,10 +222,85 @@ private struct RingView: View {
         .onChange(of: destinationManager.destinations) { _, _ in updatePositionsCache() }
     }
 
+    // MARK: - Dynamic Curve Creation
+    private func createDynamicCurvePath(from startPos: CGPoint, to endPos: CGPoint, velocity: CGPoint) -> (Path, CGPoint) {
+        // Calculate control point for dynamic quadratic curve
+        let midX = (startPos.x + endPos.x) / 2
+        let midY = (startPos.y + endPos.y) / 2
+        
+        // Vector from start to end
+        let dx = endPos.x - startPos.x
+        let dy = endPos.y - startPos.y
+        let distance = sqrt(dx * dx + dy * dy)
+        
+        var controlPoint: CGPoint = .zero
+        
+        let path = Path { path in
+            path.move(to: startPos)
+            
+            // Only create curve if there's meaningful distance
+            if distance > 20 {
+                // Perpendicular vector (rotated 90 degrees)
+                let perpX = -dy
+                let perpY = dx
+                
+                // Normalize the perpendicular vector
+                let perpLength = sqrt(perpX * perpX + perpY * perpY)
+                
+                // Dynamic curve factors based on velocity and distance
+                let velocityMagnitude = sqrt(velocity.x * velocity.x + velocity.y * velocity.y)
+                let velocityFactor = min(velocityMagnitude / 10, 2.0) // Scale velocity impact
+                let baseCurveFactor = min(distance * 0.4, 80) // Base curve intensity
+                let dynamicCurveFactor = baseCurveFactor * (1.0 + velocityFactor * 0.8)
+                
+                // Add some directional bias based on drag velocity
+                let velocityBias = velocity.x * perpX + velocity.y * perpY
+                let directionFactor = velocityBias > 0 ? 1.2 : 0.8
+                
+                let finalCurveFactor = dynamicCurveFactor * directionFactor
+                
+                let controlX = midX + (perpX / perpLength) * finalCurveFactor
+                let controlY = midY + (perpY / perpLength) * finalCurveFactor
+                controlPoint = CGPoint(x: controlX, y: controlY)
+                
+                path.addQuadCurve(to: endPos, control: controlPoint)
+            } else {
+                // Fall back to straight line for very short distances
+                controlPoint = CGPoint(x: midX, y: midY)
+                path.addLine(to: endPos)
+            }
+        }
+        
+        return (path, controlPoint)
+    }
+
     // MARK: - Helpers
     private var dragGesture: some Gesture {
         DragGesture(minimumDistance: 8)
             .onChanged { value in
+                let currentTime = Date()
+                
+                // Calculate velocity
+                if let lastPoint = lastDragPoint, let startTime = dragStartTime {
+                    let timeDelta = currentTime.timeIntervalSince(startTime)
+                    if timeDelta > 0.016 { // ~60fps throttle
+                        let dx = value.location.x - lastPoint.x
+                        let dy = value.location.y - lastPoint.y
+                        let dt = timeDelta
+                        
+                        dragVelocity = CGPoint(
+                            x: dx / dt * 0.3 + dragVelocity.x * 0.7, // Smooth velocity with exponential moving average
+                            y: dy / dt * 0.3 + dragVelocity.y * 0.7
+                        )
+                        
+                        lastDragPoint = value.location
+                        dragStartTime = currentTime
+                    }
+                } else {
+                    lastDragPoint = value.location
+                    dragStartTime = currentTime
+                }
+                
                 dragPoint = value.location
                 let positions = positionsCache
                 if startEndpoint == nil {
@@ -247,6 +327,9 @@ private struct RingView: View {
         dragPoint = nil
         startEndpoint = nil
         hoverEndpoint = nil
+        dragVelocity = .zero
+        lastDragPoint = nil
+        dragStartTime = nil
     }
 
     private func position(on angle: Angle, radius: CGFloat, in size: CGSize) -> CGPoint {
@@ -262,24 +345,41 @@ private struct RingView: View {
         return .secondary.opacity(0.12)
     }
 
-    // Build an arrowhead triangle pointing from start to end
-    private func arrowHeadPath(from start: CGPoint, to end: CGPoint, size: CGFloat, width: CGFloat) -> Path {
+    // Enhanced arrowhead that follows the curve direction
+    private func enhancedArrowHeadPath(from start: CGPoint, to end: CGPoint, control: CGPoint, size: CGFloat, width: CGFloat) -> Path {
         var path = Path()
-        let dx = end.x - start.x
-        let dy = end.y - start.y
-        let angle = atan2(dy, dx)
+        
+        // Calculate tangent direction at the end of the curve
+        // For quadratic curve, tangent at end = 2 * (end - control)
+        let tangentX = 2 * (end.x - control.x)
+        let tangentY = 2 * (end.y - control.y)
+        let tangentLength = sqrt(tangentX * tangentX + tangentY * tangentY)
+        
+        let angle: CGFloat
+        if tangentLength > 0.001 {
+            // Use curve tangent direction
+            angle = atan2(tangentY, tangentX)
+        } else {
+            // Fallback to straight line direction
+            let dx = end.x - start.x
+            let dy = end.y - start.y
+            angle = atan2(dy, dx)
+        }
+        
         // Tip at end
         let tip = end
-        // Base center pulled back along the line by `size`
+        // Base center pulled back along the tangent by `size`
         let baseCenter = CGPoint(x: end.x - cos(angle) * size, y: end.y - sin(angle) * size)
-        // Perpendicular to the line for base corners
+        // Perpendicular to the tangent for base corners
         let perpAngle = angle + .pi / 2
         let left = CGPoint(x: baseCenter.x + cos(perpAngle) * width/2, y: baseCenter.y + sin(perpAngle) * width/2)
         let right = CGPoint(x: baseCenter.x - cos(perpAngle) * width/2, y: baseCenter.y - sin(perpAngle) * width/2)
+        
         path.move(to: tip)
         path.addLine(to: left)
         path.addLine(to: right)
         path.addLine(to: tip)
+        
         return path
     }
 

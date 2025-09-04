@@ -13,18 +13,9 @@ NaviNudge is a minimalist navigation app with a circular interface for quickly l
 - Open selected route in Apple Maps
 - Location permission + live user location
 
-## Project Layout
-- `NaviNudge/`
-  - `NaviNudgeApp.swift`: App entry and environment objects
-  - `Views/`
-    - `ContentView.swift`: Host navigation + permissions state
-    - `CircularDestinationView.swift`: Radial UI of destinations + Apple Maps deeplink
-    - `DestinationButton.swift`: Destination button component
-  - `Models/`
-    - `Destination.swift`: Destination model
-  - `Managers/`
-    - `DestinationManager.swift`: Predefined destinations store
-    - `LocationManager.swift`: CoreLocation wrapper
+## Development
+
+For development setup, build commands, architecture details, and coding guidelines, see [`CLAUDE.md`](CLAUDE.md).
 
 ## Setup
 1. Create an iOS App project in Xcode with SwiftUI.
@@ -39,16 +30,9 @@ NaviNudge is a minimalist navigation app with a circular interface for quickly l
 - For route overlays, consider a `UIViewRepresentable` wrapping `MKMapView` to draw polylines.
 
 ## Quick Start in Xcode
-- Create project: iOS App, SwiftUI lifecycle, name "NaviNudge".
-- Add the `Models`, `Managers`, and `Views` folders plus `NaviNudgeApp.swift`.
-- Ensure the app’s entry file (`@main`) is `NaviNudgeApp.swift`.
-- Add the Info.plist key listed above and run.
-
-## Make Xcode Recognize The Files
-- In Xcode, right-click the app target group (likely named "NaviNudge") > "Add Files to \"NaviNudge\"…"
-- Choose the `NaviNudge/` folder from this workspace path, enable "Copy items if needed", and select "Create groups". Check your app target under "Add to targets".
-- Verify in File Inspector (⌥⌘1) that each file’s Target Membership includes your app target.
-- If files appear grey or builds fail, clean build folder (Shift+⌘+K) and rebuild.
+- Create project: iOS App, SwiftUI lifecycle, name "NaviNudge"
+- Add the `NaviNudge/` folder to your project (see [`CLAUDE.md`](CLAUDE.md) for detailed build commands)
+- Add the Info.plist key listed above and run
 
 ## Apple Maps Deeplink Routing
 - Gesture: press a node to start (center = Current Location or any saved place), drag to another node, then release to open Apple Maps prefilled from → to.
