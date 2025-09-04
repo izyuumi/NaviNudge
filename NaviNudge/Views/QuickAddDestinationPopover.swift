@@ -7,7 +7,6 @@ struct QuickAddDestinationPopover: View {
     let onClose: () -> Void
 
     @EnvironmentObject private var destinationManager: DestinationManager
-    @EnvironmentObject private var locationManager: LocationManager
 
     @State private var name: String = ""
     @State private var icon: String = "📍"
@@ -119,11 +118,6 @@ struct QuickAddDestinationPopover: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .onAppear {
-            if let center = locationManager.currentCoordinate {
-                search.updateRegion(MKCoordinateRegion(center: center, latitudinalMeters: 2500, longitudinalMeters: 2500))
-            }
-        }
     }
 
     private func add() {
