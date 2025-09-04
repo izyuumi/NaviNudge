@@ -1,10 +1,8 @@
 import SwiftUI
-import CoreLocation
 import UIKit
 
 struct CircularDestinationView: View {
     @EnvironmentObject private var destinationManager: DestinationManager
-    @EnvironmentObject private var locationManager: LocationManager
     @Environment(\.openURL) private var openURL
 
     @State private var transport: TransportMode = .driving
@@ -53,11 +51,6 @@ struct CircularDestinationView: View {
         .sheet(isPresented: $showingSettings) {
             SettingsView()
         }
-        .onAppear {
-            if locationManager.currentCoordinate == nil {
-                locationManager.start()
-            }
-        }
     }
 
     @State private var showingManage = false
@@ -72,11 +65,7 @@ struct CircularDestinationView: View {
         // saddr
         switch source {
         case .current:
-            if let current = locationManager.currentCoordinate {
-                items.append(URLQueryItem(name: "saddr", value: "\(current.latitude),\(current.longitude)"))
-            } else {
-                items.append(URLQueryItem(name: "saddr", value: "Current Location"))
-            }
+            items.append(URLQueryItem(name: "saddr", value: "Current Location"))
         case .saved(let dest):
             items.append(URLQueryItem(name: "saddr", value: "\(dest.coordinate.latitude),\(dest.coordinate.longitude)"))
         }
@@ -84,12 +73,7 @@ struct CircularDestinationView: View {
         // daddr
         switch destination {
         case .current:
-            if let current = locationManager.currentCoordinate {
-                items.append(URLQueryItem(name: "daddr", value: "\(current.latitude),\(current.longitude)"))
-            } else {
-                // Fallback to same as source if unknown; but generally destination won't be current
-                items.append(URLQueryItem(name: "daddr", value: "Current Location"))
-            }
+            items.append(URLQueryItem(name: "daddr", value: "Current Location"))
         case .saved(let dest):
             items.append(URLQueryItem(name: "daddr", value: "\(dest.coordinate.latitude),\(dest.coordinate.longitude)"))
         }
