@@ -3,6 +3,7 @@ import CoreLocation
 
 struct ContentView: View {
     @EnvironmentObject private var locationManager: LocationManager
+    @EnvironmentObject private var settings: SettingsStore
 
     var body: some View {
         NavigationStack {
@@ -17,6 +18,7 @@ struct ContentView: View {
                 }
             }
         }
+        .tint(settings.selectedTint.color)
         .onAppear {
             if locationManager.authorizationStatus == .notDetermined {
                 locationManager.requestWhenInUse()
