@@ -5,6 +5,7 @@ import UIKit
 struct CircularDestinationView: View {
     @EnvironmentObject private var destinationManager: DestinationManager
     @EnvironmentObject private var locationManager: LocationManager
+    @EnvironmentObject private var settings: SettingsStore
     @Environment(\.openURL) private var openURL
 
     @State private var transport: TransportMode = .driving
@@ -23,6 +24,9 @@ struct CircularDestinationView: View {
                 }
                 .pickerStyle(.segmented)
                 .padding(.horizontal, 24)
+                .onChange(of: transport) { _, newValue in
+                    settings.defaultTransportFlag = newValue.dirflg
+                }
                 
                 GeometryReader { geo in
                     RingView(
@@ -57,6 +61,7 @@ struct CircularDestinationView: View {
             if locationManager.currentCoordinate == nil {
                 locationManager.start()
             }
+            transport = transportMode(from: settings.defaultTransportFlag)
         }
     }
 
@@ -107,6 +112,7 @@ struct CircularDestinationView: View {
 // MARK: - Ring View (extracted)
 private struct RingView: View {
     @EnvironmentObject private var destinationManager: DestinationManager
+    @EnvironmentObject private var settings: SettingsStore
 
     let size: CGSize
     let onComplete: (Endpoint, Endpoint) -> Void
@@ -208,7 +214,9 @@ private struct RingView: View {
         .gesture(dragGesture)
         .onAppear {
             if !hapticsPrepared {
-                Haptics.prepareSelection()
+                if settings.isHapticsEnabled {
+                    Haptics.prepareSelection()
+                }
                 hapticsPrepared = true
             }
             updatePositionsCache()
@@ -225,18 +233,22 @@ private struct RingView: View {
                 let positions = positionsCache
                 if startEndpoint == nil {
                     let newly = nearestEndpoint(to: value.location, positions: positions)
-                    if newly != nil { Haptics.selectionChanged() }
+                    if newly != nil {
+                        if settings.isHapticsEnabled { Haptics.selectionChanged() }
+                    }
                     startEndpoint = newly
                 } else {
                     let nearest = nearestEndpoint(to: value.location, positions: positions)
                     let nextHover = (nearest == startEndpoint) ? nil : nearest
-                    if nextHover != hoverEndpoint, nextHover != nil { Haptics.selectionChanged() }
+                    if nextHover != hoverEndpoint, nextHover != nil {
+                        if settings.isHapticsEnabled { Haptics.selectionChanged() }
+                    }
                     hoverEndpoint = nextHover
                 }
             }
             .onEnded { _ in
                 if let source = startEndpoint, let target = hoverEndpoint, source != target {
-                    Haptics.impactLight()
+                    if settings.isHapticsEnabled { Haptics.impactLight() }
                     onComplete(source, target)
                 }
                 resetDragState()
@@ -320,6 +332,16 @@ private struct RingView: View {
         }
         if let best = best, best.1 <= baseThreshold*baseThreshold { return best.0 }
         return nil
+    }
+}
+
+// MARK: - Transport Mapping Helper
+private func transportMode(from flag: String) -> TransportMode {
+    switch flag {
+    case "w": return .walking
+    case "r": return .transit
+    case "b": return .biking
+    default: return .driving
     }
 }
 
