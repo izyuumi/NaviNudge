@@ -4,6 +4,7 @@ import CoreLocation
 
 struct CircularDestinationView: View {
     @EnvironmentObject private var destinationManager: DestinationManager
+    @EnvironmentObject private var settings: AppSettings
     @Environment(\.openURL) private var openURL
 
     @State private var transport: TransportMode = .driving
@@ -27,7 +28,7 @@ struct CircularDestinationView: View {
                     RingView(
                         size: geo.size,
                         onComplete: { source, target in
-                            openAppleMaps(from: source, to: target)
+                            openMaps(from: source, to: target)
                         },
                         onRequestManage: { showingManage = true }
                     )
@@ -52,10 +53,24 @@ struct CircularDestinationView: View {
         .sheet(isPresented: $showingSettings) {
             SettingsView()
         }
+        .onAppear {
+            transport = settings.defaultTransportMode
+        }
     }
 
     @State private var showingManage = false
     @State private var showingSettings = false
+
+    private func openMaps(from source: Endpoint, to destination: Endpoint) {
+        switch settings.preferredMapsApp {
+        case .apple:
+            openAppleMaps(from: source, to: destination)
+        case .google:
+            if !openGoogleMaps(from: source, to: destination) {
+                openAppleMaps(from: source, to: destination)
+            }
+        }
+    }
 
     private func openAppleMaps(from source: Endpoint, to destination: Endpoint) {
         var comps = URLComponents()
@@ -79,12 +94,42 @@ struct CircularDestinationView: View {
             items.append(URLQueryItem(name: "daddr", value: "\(dest.coordinate.latitude),\(dest.coordinate.longitude)"))
         }
 
-        items.append(URLQueryItem(name: "dirflg", value: transport.dirflg))
+        items.append(URLQueryItem(name: "dirflg", value: transport.appleDirflg))
         comps.queryItems = items
 
         if let url = comps.url {
             openURL(url)
         }
+    }
+
+    private func openGoogleMaps(from source: Endpoint, to destination: Endpoint) -> Bool {
+        var comps = URLComponents()
+        comps.scheme = "https"
+        comps.host = "www.google.com"
+        comps.path = "/maps/dir/"
+        var items: [URLQueryItem] = []
+
+        func value(for endpoint: Endpoint) -> String {
+            switch endpoint {
+            case .current:
+                return "Current+Location"
+            case .saved(let dest):
+                return "\(dest.coordinate.latitude),\(dest.coordinate.longitude)"
+            }
+        }
+
+        items.append(URLQueryItem(name: "api", value: "1"))
+        items.append(URLQueryItem(name: "origin", value: value(for: source)))
+        items.append(URLQueryItem(name: "destination", value: value(for: destination)))
+        items.append(URLQueryItem(name: "travelmode", value: transport.googleTravelMode))
+
+        comps.queryItems = items
+
+        if let url = comps.url {
+            openURL(url)
+            return true
+        }
+        return false
     }
 
 }
@@ -408,18 +453,7 @@ private struct RingView: View {
     }
 }
 
-private enum TransportMode: CaseIterable, Identifiable, Hashable {
-    case driving, walking, transit, biking
-    var id: Self { self }
-    var dirflg: String {
-        switch self {
-        case .driving: return "d"
-        case .walking: return "w"
-        case .transit: return "r"
-        case .biking: return "b"
-        }
-    }
-}
+// moved to Models/TransportMode.swift
 
 // Represents a draggable endpoint: current location or a saved destination
 private enum Endpoint: Hashable, Identifiable {
