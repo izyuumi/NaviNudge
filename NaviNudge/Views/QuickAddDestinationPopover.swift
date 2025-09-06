@@ -175,17 +175,9 @@ final class QuickLocalSearchViewModel: NSObject, ObservableObject, MKLocalSearch
 // MARK: - Helpers
 private func quickCoordinate(of item: MKMapItem?) -> CLLocationCoordinate2D? {
     guard let item = item else { return nil }
-    if #available(iOS 26.0, *) {
-        return item.location.coordinate
-    } else {
-        return item.placemark.coordinate
-    }
+    return item.location.coordinate
 }
 
 private func quickDisplayAddress(for item: MKMapItem) -> String? {
-    if #available(iOS 26.0, *) {
-        return nil
-    } else {
-        return item.placemark.title
-    }
+    return nil
 }

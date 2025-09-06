@@ -13,26 +13,27 @@ struct CircularDestinationView: View {
     var body: some View {
         ZStack {
             VStack(spacing: 20) {
-                // Transportation mode picker at the top
-                Picker("Mode", selection: $transport) {
-                    Text("Drive").tag(TransportMode.driving)
-                    Text("Walk").tag(TransportMode.walking)
-                    Text("Transit").tag(TransportMode.transit)
-                    Text("Bike").tag(TransportMode.biking)
-                }
-                .pickerStyle(.segmented)
-                .padding(.horizontal, 24)
-                
                 GeometryReader { geo in
                     RingView(
                         size: geo.size,
                         onComplete: { source, target in
                             openAppleMaps(from: source, to: target)
                         },
-                        onRequestManage: { showingManage = true }
+                        onRequestManage: { showingManage = true },
+                        onRequestEdit: { dest in editingDestination = dest }
                     )
                 }
                 .aspectRatio(1, contentMode: .fit)
+                .padding(.horizontal, 24)
+                
+                // Transportation mode picker at the bottom
+                Picker("Mode", selection: $transport) {
+                    Image(systemName: "car.fill").tag(TransportMode.driving)
+                    Image(systemName: "figure.walk").tag(TransportMode.walking)
+                    Image(systemName: "bus.fill").tag(TransportMode.transit)
+                    Image(systemName: "bicycle").tag(TransportMode.biking)
+                }
+                .pickerStyle(.segmented)
                 .padding(.horizontal, 24)
             }
             .padding(.vertical, 16)
@@ -52,10 +53,16 @@ struct CircularDestinationView: View {
         .sheet(isPresented: $showingSettings) {
             SettingsView()
         }
+        .sheet(item: $editingDestination) { dest in
+            EditDestinationView(destination: dest) { updated in
+                destinationManager.update(updated)
+            }
+        }
     }
 
     @State private var showingManage = false
     @State private var showingSettings = false
+    @State private var editingDestination: Destination? = nil
 
     private func openAppleMaps(from source: Endpoint, to destination: Endpoint) {
         var comps = URLComponents()
@@ -96,6 +103,7 @@ private struct RingView: View {
     let size: CGSize
     let onComplete: (Endpoint, Endpoint) -> Void
     let onRequestManage: () -> Void
+    let onRequestEdit: (Destination) -> Void
 
     @State private var dragPoint: CGPoint? = nil
     @State private var startEndpoint: Endpoint? = nil
@@ -118,22 +126,17 @@ private struct RingView: View {
                     .foregroundStyle(.primary)
                     .frame(width: 52, height: 52)
                     .background(Circle().fill(nodeFill(for: .current)))
-                Text("You")
-                    .foregroundStyle(.primary)
-                    .font(.caption)
             }
             .position(center)
             .accessibilityElement(children: .combine)
             .accessibilityLabel("Current Location")
 
-            // Four fixed cardinal slots (top, right, bottom, left)
-            let slots: [Angle] = [
-                Angle(radians: -.pi/2), // top
-                Angle(radians: 0),      // right
-                Angle(radians: .pi/2),  // bottom
-                Angle(radians: .pi)     // left
-            ]
-            ForEach(0..<4, id: \.self) { idx in
+            // Dynamic slots - 4 initially, 8 after first destination is set
+            let hasDestinations = !destinationManager.destinations.isEmpty
+            let slotCount = hasDestinations ? 8 : 4
+            let slots = calculateSlots(count: slotCount)
+            
+            ForEach(0..<slotCount, id: \.self) { idx in
                 let pos = position(on: slots[idx], radius: radius, in: size)
                 if idx < destinationManager.destinations.count {
                     let destination = destinationManager.destinations[idx]
@@ -147,6 +150,8 @@ private struct RingView: View {
                             .font(.caption)
                     }
                     .position(pos)
+                    .contentShape(Rectangle())
+                    .onTapGesture { onRequestEdit(destination) }
                     .accessibilityElement(children: .combine)
                     .accessibilityLabel(destination.name)
                 } else {
@@ -205,6 +210,24 @@ private struct RingView: View {
         }
         .onChange(of: size) { _, _ in updatePositionsCache() }
         .onChange(of: destinationManager.destinations) { _, _ in updatePositionsCache() }
+    }
+    
+    // MARK: - Slot Calculation
+    private func calculateSlots(count: Int) -> [Angle] {
+        if count == 4 {
+            // Four fixed cardinal slots (top, right, bottom, left)
+            return [
+                Angle(radians: -.pi/2), // top
+                Angle(radians: 0),      // right
+                Angle(radians: .pi/2),  // bottom
+                Angle(radians: .pi)     // left
+            ]
+        } else {
+            // Eight evenly spaced slots
+            return (0..<8).map { idx in
+                Angle(radians: Double(idx) * .pi / 4) // 45° intervals
+            }
+        }
     }
 
     // MARK: - Dynamic Curve Creation
@@ -373,13 +396,13 @@ private struct RingView: View {
         let center = CGPoint(x: size.width/2, y: size.height/2)
         map[.current] = center
         let radius = min(size.width, size.height) * 0.38
-        let slots: [Angle] = [
-            Angle(radians: -.pi/2), // top
-            Angle(radians: 0),      // right
-            Angle(radians: .pi/2),  // bottom
-            Angle(radians: .pi)     // left
-        ]
-        let showCount = min(4, destinationManager.destinations.count)
+        
+        // Dynamic slot calculation
+        let hasDestinations = !destinationManager.destinations.isEmpty
+        let slotCount = hasDestinations ? 8 : 4
+        let slots = calculateSlots(count: slotCount)
+        
+        let showCount = min(slotCount, destinationManager.destinations.count)
         if showCount > 0 {
             for i in 0..<showCount {
                 let dest = destinationManager.destinations[i]
