@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import CoreLocation
 
 struct CircularDestinationView: View {
     @EnvironmentObject private var destinationManager: DestinationManager
