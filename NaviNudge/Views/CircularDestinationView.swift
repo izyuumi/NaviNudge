@@ -99,6 +99,7 @@ struct CircularDestinationView: View {
 // MARK: - Ring View (extracted)
 private struct RingView: View {
     @EnvironmentObject private var destinationManager: DestinationManager
+    @EnvironmentObject private var locationProvider: LocationProvider
 
     let size: CGSize
     let onComplete: (Endpoint, Endpoint) -> Void
@@ -140,7 +141,7 @@ private struct RingView: View {
                 let pos = position(on: slots[idx], radius: radius, in: size)
                 if idx < destinationManager.destinations.count {
                     let destination = destinationManager.destinations[idx]
-                    VStack(spacing: 6) {
+                    VStack(spacing: 4) {
                         Text(destination.icon)
                             .font(.system(size: 28))
                             .frame(width: 44, height: 44)
@@ -148,12 +149,17 @@ private struct RingView: View {
                         Text(destination.name)
                             .foregroundStyle(.primary)
                             .font(.caption)
+                        if let dist = distanceText(to: destination) {
+                            Text(dist)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                     .position(pos)
                     .contentShape(Rectangle())
                     .onTapGesture { onRequestEdit(destination) }
                     .accessibilityElement(children: .combine)
-                    .accessibilityLabel(destination.name)
+                    .accessibilityLabel("\(destination.name), \(distanceText(to: destination) ?? "unknown distance")")
                 } else {
                     Button(action: { onRequestManage() }) {
                         VStack(spacing: 6) {
@@ -410,6 +416,13 @@ private struct RingView: View {
             }
         }
         positionsCache = map
+    }
+
+    private func distanceText(to destination: Destination) -> String? {
+        guard let userLoc = locationProvider.currentLocation else { return nil }
+        let destLoc = CLLocation(latitude: destination.coordinate.latitude, longitude: destination.coordinate.longitude)
+        let meters = userLoc.distance(from: destLoc)
+        return LocationProvider.formatDistance(meters)
     }
 
     private func nearestEndpoint(to point: CGPoint, positions: [Endpoint: CGPoint]) -> Endpoint? {
