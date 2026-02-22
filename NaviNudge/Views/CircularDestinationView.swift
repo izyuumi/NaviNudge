@@ -20,7 +20,8 @@ struct CircularDestinationView: View {
                             openAppleMaps(from: source, to: target)
                         },
                         onRequestManage: { showingManage = true },
-                        onRequestEdit: { dest in editingDestination = dest }
+                        onRequestEdit: { dest in editingDestination = dest },
+                        onQuickNavigate: { dest in quickNavigate(to: dest) }
                     )
                 }
                 .aspectRatio(1, contentMode: .fit)
@@ -64,6 +65,20 @@ struct CircularDestinationView: View {
     @State private var showingSettings = false
     @State private var editingDestination: Destination? = nil
 
+    private func quickNavigate(to destination: Destination) {
+        var comps = URLComponents()
+        comps.scheme = "https"
+        comps.host = "maps.apple.com"
+        comps.queryItems = [
+            URLQueryItem(name: "saddr", value: "Current Location"),
+            URLQueryItem(name: "daddr", value: "\(destination.coordinate.latitude),\(destination.coordinate.longitude)"),
+            URLQueryItem(name: "dirflg", value: transport.dirflg),
+        ]
+        if let url = comps.url {
+            openURL(url)
+        }
+    }
+
     private func openAppleMaps(from source: Endpoint, to destination: Endpoint) {
         var comps = URLComponents()
         comps.scheme = "https"
@@ -104,6 +119,7 @@ private struct RingView: View {
     let onComplete: (Endpoint, Endpoint) -> Void
     let onRequestManage: () -> Void
     let onRequestEdit: (Destination) -> Void
+    let onQuickNavigate: (Destination) -> Void
 
     @State private var dragPoint: CGPoint? = nil
     @State private var startEndpoint: Endpoint? = nil
@@ -152,8 +168,13 @@ private struct RingView: View {
                     .position(pos)
                     .contentShape(Rectangle())
                     .onTapGesture { onRequestEdit(destination) }
+                    .onLongPressGesture {
+                        Haptics.impactLight()
+                        onQuickNavigate(destination)
+                    }
                     .accessibilityElement(children: .combine)
                     .accessibilityLabel(destination.name)
+                    .accessibilityHint("Tap to edit, long press to navigate")
                 } else {
                     Button(action: { onRequestManage() }) {
                         VStack(spacing: 6) {
