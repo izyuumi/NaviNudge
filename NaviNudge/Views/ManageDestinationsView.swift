@@ -16,6 +16,26 @@ struct ManageDestinationsView: View {
     var body: some View {
         NavigationStack {
             List {
+                if !destinationManager.destinations.isEmpty {
+                    Section(header: Text("Your Destinations")) {
+                        ForEach(destinationManager.destinations) { dest in
+                            HStack(spacing: 12) {
+                                Text(dest.icon)
+                                    .font(.title2)
+                                Text(dest.name)
+                                    .font(.body)
+                                Spacer()
+                            }
+                        }
+                        .onDelete { offsets in
+                            destinationManager.remove(at: offsets)
+                        }
+                        .onMove { source, destination in
+                            destinationManager.move(from: source, to: destination)
+                        }
+                    }
+                }
+
                 Section(header: Text("Add Destination")) {
                     TextField("Name", text: $name)
                     HStack {
@@ -82,6 +102,11 @@ struct ManageDestinationsView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Close") { dismiss() }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    if !destinationManager.destinations.isEmpty {
+                        EditButton()
+                    }
                 }
             }
         }
