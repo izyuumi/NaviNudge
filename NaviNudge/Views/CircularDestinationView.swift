@@ -348,8 +348,17 @@ private struct RingView: View {
     }
 
     private func nodeFill(for endpoint: Endpoint) -> Color {
-        if endpoint == startEndpoint { return .accentColor.opacity(0.25) }
-        if endpoint == hoverEndpoint { return .accentColor.opacity(0.18) }
+        let baseColor: Color
+        if case .saved(let dest) = endpoint {
+            baseColor = dest.color
+        } else {
+            baseColor = .accentColor
+        }
+        if endpoint == startEndpoint { return baseColor.opacity(0.25) }
+        if endpoint == hoverEndpoint { return baseColor.opacity(0.18) }
+        if case .saved(let dest) = endpoint, dest.colorHex != nil {
+            return baseColor.opacity(0.15)
+        }
         return .secondary.opacity(0.12)
     }
 
