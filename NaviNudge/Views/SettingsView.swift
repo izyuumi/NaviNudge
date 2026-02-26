@@ -3,6 +3,7 @@ import UIKit
 
 struct SettingsView: View {
     @EnvironmentObject private var destinationManager: DestinationManager
+    @EnvironmentObject private var locationManager: LocationManager
     @Environment(\.dismiss) private var dismiss
 
     @State private var showingManage = false
@@ -18,6 +19,28 @@ struct SettingsView: View {
                     } label: {
                         Text("Clear All Destinations")
                     }
+                }
+
+                Section {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("Haptic alert distance")
+                            Spacer()
+                            Text("\(Int(locationManager.hapticThresholdMeters)) m")
+                                .foregroundStyle(.secondary)
+                                .monospacedDigit()
+                        }
+                        Slider(
+                            value: $locationManager.hapticThresholdMeters,
+                            in: 10...200,
+                            step: 10
+                        )
+                    }
+                    .padding(.vertical, 4)
+                } header: {
+                    Text("Haptic Feedback")
+                } footer: {
+                    Text("Vibrates when you come within this distance of a saved destination.")
                 }
 
                 Section("About") {
