@@ -121,7 +121,6 @@ struct FavoritesView: View {
         comps.scheme = "https"
         comps.host = "maps.apple.com"
         comps.queryItems = [
-            URLQueryItem(name: "saddr", value: "Current Location"),
             URLQueryItem(name: "daddr", value: "\(destination.coordinate.latitude),\(destination.coordinate.longitude)"),
             URLQueryItem(name: "dirflg", value: transport.dirflg),
         ]
