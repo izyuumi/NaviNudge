@@ -24,8 +24,11 @@ struct FavoritesView: View {
             .navigationTitle("Favorites")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button { showingAdd = true } label: {
-                        Image(systemName: "plus")
+                    HStack {
+                        EditButton()
+                        Button { showingAdd = true } label: {
+                            Image(systemName: "plus")
+                        }
                     }
                 }
             }
