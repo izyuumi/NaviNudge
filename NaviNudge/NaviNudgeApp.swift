@@ -16,7 +16,7 @@ struct NaviNudgeApp: App {
           locationManager.requestAuthorization()
           locationManager.startUpdating()
         }
-        .onChange(of: destinationManager.destinations) { destinations in
+        .onChange(of: destinationManager.destinations) { _, destinations in
           // Keep LocationManager aware of the latest destination list
           locationManager.destinations = destinations
         }
