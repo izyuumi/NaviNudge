@@ -56,7 +56,8 @@ final class LocationManager: NSObject, ObservableObject {
 
   /// Called after every location update to detect when the user enters the haptic zone.
   private func checkProximity() {
-    guard let location = currentLocation else { return }
+    guard let location = currentLocation, !destinations.isEmpty else { return }
+
     for destination in destinations {
       let target = CLLocation(
         latitude: destination.coordinate.latitude,
@@ -70,12 +71,13 @@ final class LocationManager: NSObject, ObservableObject {
         triggeredIDs.insert(destination.id)
         Haptics.impactMedium()
       } else if distance > hapticThresholdMeters * 2 {
-        // Reset the flag once the user has moved clearly out of range
+        // Reset the flag once the user has moved clearly out of range (3x threshold)
         triggeredIDs.remove(destination.id)
-        // Warm up the generator so the next trigger fires without latency
-        Haptics.prepareImpactMedium()
       }
     }
+
+    // Warm up the generator for all active destinations to reduce latency on next trigger
+    Haptics.prepareImpactMedium()
   }
 }
 
@@ -95,11 +97,27 @@ extension LocationManager: CLLocationManagerDelegate {
   nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
     Task { @MainActor in
       self.authorizationStatus = manager.authorizationStatus
-      if manager.authorizationStatus == .authorizedWhenInUse
-        || manager.authorizationStatus == .authorizedAlways
-      {
+      switch manager.authorizationStatus {
+      case .authorizedWhenInUse, .authorizedAlways:
         manager.startUpdatingLocation()
+      case .denied, .restricted:
+        // User denied permission - no action needed, UI can show appropriate message
+        break
+      case .notDetermined:
+        // Will be handled by requestAuthorization() call from app
+        break
+      @unknown default:
+        break
       }
+    }
+  }
+
+  nonisolated func locationManager(
+    _ manager: CLLocationManager, didFailWithError error: Error
+  ) {
+    Task { @MainActor in
+      // Log the error but don't crash - location services may recover
+      print("LocationManager error: \(error.localizedDescription)")
     }
   }
 }
