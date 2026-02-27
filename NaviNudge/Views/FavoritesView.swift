@@ -182,17 +182,3 @@ private struct FavoriteRow: View {
     }
 }
 
-// MARK: - Transport Mode (mirrors the one in CircularDestinationView)
-
-private enum TransportMode: CaseIterable, Identifiable, Hashable {
-    case driving, walking, transit, biking
-    var id: Self { self }
-    var dirflg: String {
-        switch self {
-        case .driving: return "d"
-        case .walking: return "w"
-        case .transit: return "r"
-        case .biking: return "b"
-        }
-    }
-}

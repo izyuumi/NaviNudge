@@ -431,19 +431,6 @@ private struct RingView: View {
     }
 }
 
-private enum TransportMode: CaseIterable, Identifiable, Hashable {
-    case driving, walking, transit, biking
-    var id: Self { self }
-    var dirflg: String {
-        switch self {
-        case .driving: return "d"
-        case .walking: return "w"
-        case .transit: return "r"
-        case .biking: return "b"
-        }
-    }
-}
-
 // Represents a draggable endpoint: current location or a saved destination
 private enum Endpoint: Hashable, Identifiable {
     case current
