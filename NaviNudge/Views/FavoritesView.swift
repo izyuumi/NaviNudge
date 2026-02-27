@@ -138,41 +138,47 @@ private struct FavoriteRow: View {
 
     var body: some View {
         HStack(spacing: 14) {
-            // Icon bubble
-            Text(destination.icon)
-                .font(.system(size: 26))
-                .frame(width: 44, height: 44)
-                .background(Circle().fill(Color.secondary.opacity(0.15)))
+            // Tappable icon + name area — acts as the primary navigate action
+            Button(action: onNavigate) {
+                HStack(spacing: 14) {
+                    // Icon bubble
+                    Text(destination.icon)
+                        .font(.system(size: 26))
+                        .frame(width: 44, height: 44)
+                        .background(Circle().fill(Color.secondary.opacity(0.15)))
 
-            // Name
-            Text(destination.name)
-                .font(.body)
-                .lineLimit(1)
+                    // Name
+                    Text(destination.name)
+                        .font(.body)
+                        .lineLimit(1)
+                        .foregroundStyle(.primary)
+                }
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(destination.name)
+            .accessibilityHint("Tap to navigate")
 
             Spacer()
 
-            // Edit button
+            // Edit button — isolated so it doesn't conflict with the navigate tap
             Button(action: onEdit) {
                 Image(systemName: "pencil")
                     .foregroundStyle(.secondary)
             }
             .buttonStyle(.plain)
             .padding(.trailing, 4)
+            .accessibilityLabel("Edit \(destination.name)")
 
-            // Navigation button (primary action)
+            // Navigation button (secondary shortcut)
             Button(action: onNavigate) {
                 Image(systemName: "arrow.triangle.turn.up.right.circle.fill")
                     .font(.system(size: 30))
                     .foregroundStyle(.blue)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Navigate to \(destination.name)")
         }
         .padding(.vertical, 4)
-        .contentShape(Rectangle())
-        .onTapGesture(perform: onNavigate)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(destination.name)")
-        .accessibilityHint("Tap to navigate, swipe left to delete")
     }
 }
 
