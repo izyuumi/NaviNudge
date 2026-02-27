@@ -16,7 +16,13 @@ final class LocationManager: NSObject, ObservableObject {
 
   /// The destinations to monitor proximity for. Updated by the app whenever
   /// `DestinationManager.destinations` changes.
-  var destinations: [Destination] = []
+  var destinations: [Destination] = [] {
+    didSet {
+      // Remove stale IDs for destinations that no longer exist
+      let activeIDs = Set(destinations.map(\.id))
+      triggeredIDs.formIntersection(activeIDs)
+    }
+  }
 
   private static let thresholdKey = "hapticThresholdMeters"
   private let manager = CLLocationManager()
@@ -66,6 +72,8 @@ final class LocationManager: NSObject, ObservableObject {
       } else if distance > hapticThresholdMeters * 2 {
         // Reset the flag once the user has moved clearly out of range
         triggeredIDs.remove(destination.id)
+        // Warm up the generator so the next trigger fires without latency
+        Haptics.prepareImpactMedium()
       }
     }
   }

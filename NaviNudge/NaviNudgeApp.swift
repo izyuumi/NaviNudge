@@ -26,8 +26,10 @@ struct NaviNudgeApp: App {
           switch phase {
           case .active:
             locationManager.startUpdating()
-          case .background, .inactive:
+          case .background:
             locationManager.stopUpdating()
+          case .inactive:
+            break // transient interruptions (calls, Control Center) – keep updates running
           @unknown default:
             break
           }

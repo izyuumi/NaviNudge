@@ -19,6 +19,10 @@ enum Haptics {
         impactLightGenerator.impactOccurred()
     }
 
+    static func prepareImpactMedium() {
+        impactMediumGenerator.prepare()
+    }
+
     static func impactMedium() {
         impactMediumGenerator.impactOccurred()
     }
