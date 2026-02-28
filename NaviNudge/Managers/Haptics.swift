@@ -24,18 +24,6 @@ enum Haptics {
     }
 
     static func impactMedium() {
-        // Wrap in do-catch to handle any unexpected initialization errors gracefully
-        do {
-            try impactMediumGenerator.prepare()
-            impactMediumGenerator.impactOccurred()
-        } catch {
-            // Silently fail - haptic is a nice-to-have, not critical functionality
-            print("Haptic feedback error: \(error.localizedDescription)")
-        }
-    }
-
-    static func impactMediumSafely() {
-        // Alternative method that doesn't require prepare() call first
         impactMediumGenerator.impactOccurred()
     }
 }
