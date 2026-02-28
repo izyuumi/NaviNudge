@@ -26,6 +26,15 @@ final class LocationManager: NSObject, ObservableObject {
         stopUpdating()
       } else {
         triggeredIDs.formIntersection(activeIDs)
+        // Clear triggered flag for any destination whose coordinate changed
+        // (same UUID but edited location) so the haptic fires at the new location.
+        let previousCoords = Dictionary(uniqueKeysWithValues: oldValue.map { ($0.id, $0.coordinate) })
+        for dest in destinations {
+          if let prev = previousCoords[dest.id],
+             prev.latitude != dest.coordinate.latitude || prev.longitude != dest.coordinate.longitude {
+            triggeredIDs.remove(dest.id)
+          }
+        }
         startUpdating()
       }
     }
@@ -127,8 +136,13 @@ extension LocationManager: CLLocationManagerDelegate {
     Task { @MainActor in
       self.authorizationStatus = manager.authorizationStatus
       switch manager.authorizationStatus {
-      case .authorizedWhenInUse, .authorizedAlways:
+      case .authorizedAlways:
         self.startUpdating()
+      case .authorizedWhenInUse:
+        // Upgrade to Always authorization so haptics work when the app is backgrounded.
+        // On iOS this is a no-op if the user already chose "Allow Once" or "While Using".
+        self.startUpdating()
+        manager.requestAlwaysAuthorization()
       case .denied, .restricted:
         // User denied permission - no action needed, UI can show appropriate message
         self.stopUpdating()
