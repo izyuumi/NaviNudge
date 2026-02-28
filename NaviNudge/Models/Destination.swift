@@ -17,11 +17,21 @@ struct Destination: Identifiable, Hashable, Codable {
     }
 
     static func == (lhs: Destination, rhs: Destination) -> Bool {
-        lhs.id == rhs.id
+        lhs.id == rhs.id &&
+        lhs.name == rhs.name &&
+        lhs.icon == rhs.icon &&
+        lhs.coordinate.latitude == rhs.coordinate.latitude &&
+        lhs.coordinate.longitude == rhs.coordinate.longitude &&
+        lhs.preferredSlotIndex == rhs.preferredSlotIndex
     }
 
     func hash(into hasher: inout Hasher) {
         hasher.combine(id)
+        hasher.combine(name)
+        hasher.combine(icon)
+        hasher.combine(coordinate.latitude)
+        hasher.combine(coordinate.longitude)
+        hasher.combine(preferredSlotIndex)
     }
 
     enum CodingKeys: String, CodingKey { case id, name, icon, latitude, longitude, preferredSlotIndex }
