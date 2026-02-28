@@ -20,7 +20,12 @@ final class LocationManager: NSObject, ObservableObject {
     didSet {
       // Remove stale IDs for destinations that no longer exist
       let activeIDs = Set(destinations.map(\.id))
-      triggeredIDs.formIntersection(activeIDs)
+      if destinations.isEmpty {
+        // Clear all triggered IDs when no destinations remain to prevent memory leaks
+        clearTriggeredIDs()
+      } else {
+        triggeredIDs.formIntersection(activeIDs)
+      }
     }
   }
 
@@ -59,6 +64,12 @@ final class LocationManager: NSObject, ObservableObject {
     guard let location = currentLocation, !destinations.isEmpty else { return }
 
     for destination in destinations {
+      // Validate coordinate before creating CLLocation
+      guard isValidCoordinate(destination.coordinate) else {
+        print("Invalid coordinates for destination: \(destination.name)")
+        continue
+      }
+
       let target = CLLocation(
         latitude: destination.coordinate.latitude,
         longitude: destination.coordinate.longitude
@@ -70,7 +81,7 @@ final class LocationManager: NSObject, ObservableObject {
         guard !triggeredIDs.contains(destination.id) else { continue }
         triggeredIDs.insert(destination.id)
         Haptics.impactMedium()
-      } else if distance > hapticThresholdMeters * 2 {
+      } else if distance > hapticThresholdMeters * 3 {
         // Reset the flag once the user has moved clearly out of range (3x threshold)
         triggeredIDs.remove(destination.id)
       }
@@ -78,6 +89,16 @@ final class LocationManager: NSObject, ObservableObject {
 
     // Warm up the generator for all active destinations to reduce latency on next trigger
     Haptics.prepareImpactMedium()
+  }
+
+  /// Validates that a coordinate is within acceptable ranges.
+  private func isValidCoordinate(_ coord: CLLocationCoordinate2D) -> Bool {
+    return abs(coord.latitude) <= 90.0 && abs(coord.longitude) <= 180.0
+  }
+
+  /// Clears triggeredIDs to prevent memory leaks when all destinations are removed.
+  private func clearTriggeredIDs() {
+    triggeredIDs.removeAll()
   }
 }
 
