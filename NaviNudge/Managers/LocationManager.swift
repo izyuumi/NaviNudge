@@ -43,6 +43,10 @@ final class LocationManager: NSObject, ObservableObject {
   private static let thresholdKey = "hapticThresholdMeters"
   private let manager = CLLocationManager()
 
+  /// Prevents repeatedly spamming `requestAlwaysAuthorization()`.
+  /// iOS will only show the "upgrade to Always" prompt after the user has granted While Using.
+  private var didRequestAlwaysUpgrade = false
+
   // One-shot flag: tracks which destination IDs have already fired haptics in the current
   // proximity session. Cleared again once the user moves sufficiently far away.
   private var triggeredIDs: Set<UUID> = []
@@ -58,7 +62,23 @@ final class LocationManager: NSObject, ObservableObject {
   }
 
   func requestAuthorization() {
-    manager.requestAlwaysAuthorization()
+    switch authorizationStatus {
+    case .notDetermined:
+      // Step 1: get While Using first (required before iOS will show the upgrade-to-Always prompt).
+      manager.requestWhenInUseAuthorization()
+    case .authorizedWhenInUse:
+      // Step 2: upgrade to Always (will show the second prompt).
+      if !didRequestAlwaysUpgrade {
+        didRequestAlwaysUpgrade = true
+        manager.requestAlwaysAuthorization()
+      }
+    case .authorizedAlways:
+      break
+    case .denied, .restricted:
+      break
+    @unknown default:
+      break
+    }
   }
 
   func startUpdating() {
@@ -66,7 +86,9 @@ final class LocationManager: NSObject, ObservableObject {
     guard authorizationStatus == .authorizedWhenInUse || authorizationStatus == .authorizedAlways else {
       return
     }
-    manager.allowsBackgroundLocationUpdates = true
+
+    // Foreground updates work with While Using. Background updates require Always.
+    manager.allowsBackgroundLocationUpdates = (authorizationStatus == .authorizedAlways)
     manager.startUpdatingLocation()
   }
 
@@ -139,10 +161,12 @@ extension LocationManager: CLLocationManagerDelegate {
       case .authorizedAlways:
         self.startUpdating()
       case .authorizedWhenInUse:
-        // Upgrade to Always authorization so haptics work when the app is backgrounded.
-        // On iOS this is a no-op if the user already chose "Allow Once" or "While Using".
+        // Start foreground updates immediately, then request the upgrade to Always.
         self.startUpdating()
-        manager.requestAlwaysAuthorization()
+        if !self.didRequestAlwaysUpgrade {
+          self.didRequestAlwaysUpgrade = true
+          manager.requestAlwaysAuthorization()
+        }
       case .denied, .restricted:
         // User denied permission - no action needed, UI can show appropriate message
         self.stopUpdating()
