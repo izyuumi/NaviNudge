@@ -16,11 +16,11 @@ struct NaviNudgeApp: App {
           locationManager.destinations = destinationManager.destinations
           locationManager.requestAuthorization()
         }
-        .onChange(of: destinationManager.destinations) { _, destinations in
+        .onChange(of: destinationManager.destinations) { destinations in
           // Keep LocationManager aware of the latest destination list
           locationManager.destinations = destinations
         }
-        .onChange(of: scenePhase) { _, phase in
+        .onChange(of: scenePhase) { phase in
           // Resume monitoring when the app becomes active again.
           switch phase {
           case .active:

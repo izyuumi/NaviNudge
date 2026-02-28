@@ -49,7 +49,7 @@ final class LocationManager: NSObject, ObservableObject {
   }
 
   func requestAuthorization() {
-    manager.requestWhenInUseAuthorization()
+    manager.requestAlwaysAuthorization()
   }
 
   func startUpdating() {
@@ -57,6 +57,7 @@ final class LocationManager: NSObject, ObservableObject {
     guard authorizationStatus == .authorizedWhenInUse || authorizationStatus == .authorizedAlways else {
       return
     }
+    manager.allowsBackgroundLocationUpdates = true
     manager.startUpdatingLocation()
   }
 
