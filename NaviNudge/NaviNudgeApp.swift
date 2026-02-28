@@ -12,24 +12,21 @@ struct NaviNudgeApp: App {
         .environmentObject(destinationManager)
         .environmentObject(locationManager)
         .onAppear {
-          // Sync destinations and kick off location updates on first launch
+          // Sync destinations on first launch; LocationManager decides whether monitoring should run.
           locationManager.destinations = destinationManager.destinations
           locationManager.requestAuthorization()
-          locationManager.startUpdating()
         }
         .onChange(of: destinationManager.destinations) { _, destinations in
           // Keep LocationManager aware of the latest destination list
           locationManager.destinations = destinations
         }
         .onChange(of: scenePhase) { _, phase in
-          // Pause location updates while the app is in the background to save battery
+          // Resume monitoring when the app becomes active again.
           switch phase {
           case .active:
             locationManager.startUpdating()
-          case .background:
-            locationManager.stopUpdating()
-          case .inactive:
-            break // transient interruptions (calls, Control Center) – keep updates running
+          case .background, .inactive:
+            break
           @unknown default:
             break
           }

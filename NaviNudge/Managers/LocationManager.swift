@@ -23,8 +23,10 @@ final class LocationManager: NSObject, ObservableObject {
       if destinations.isEmpty {
         // Clear all triggered IDs when no destinations remain to prevent memory leaks
         clearTriggeredIDs()
+        stopUpdating()
       } else {
         triggeredIDs.formIntersection(activeIDs)
+        startUpdating()
       }
     }
   }
@@ -41,6 +43,7 @@ final class LocationManager: NSObject, ObservableObject {
     hapticThresholdMeters = saved > 0 ? saved : 50.0
     super.init()
     manager.delegate = self
+    authorizationStatus = manager.authorizationStatus
     manager.desiredAccuracy = kCLLocationAccuracyBestForNavigation
     manager.distanceFilter = 5 // receive updates roughly every 5 m
   }
@@ -50,6 +53,10 @@ final class LocationManager: NSObject, ObservableObject {
   }
 
   func startUpdating() {
+    guard !destinations.isEmpty else { return }
+    guard authorizationStatus == .authorizedWhenInUse || authorizationStatus == .authorizedAlways else {
+      return
+    }
     manager.startUpdatingLocation()
   }
 
@@ -120,9 +127,10 @@ extension LocationManager: CLLocationManagerDelegate {
       self.authorizationStatus = manager.authorizationStatus
       switch manager.authorizationStatus {
       case .authorizedWhenInUse, .authorizedAlways:
-        manager.startUpdatingLocation()
+        self.startUpdating()
       case .denied, .restricted:
         // User denied permission - no action needed, UI can show appropriate message
+        self.stopUpdating()
         break
       case .notDetermined:
         // Will be handled by requestAuthorization() call from app
