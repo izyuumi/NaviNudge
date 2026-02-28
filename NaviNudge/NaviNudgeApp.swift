@@ -14,11 +14,19 @@ struct NaviNudgeApp: App {
         .onAppear {
           // Sync destinations on first launch; LocationManager decides whether monitoring should run.
           locationManager.destinations = destinationManager.destinations
-          locationManager.requestAuthorization()
+          // Only request authorization if the user already has saved destinations.
+          // This avoids burning the one-shot iOS permission prompt before the feature is relevant.
+          if !destinationManager.destinations.isEmpty {
+            locationManager.requestAuthorization()
+          }
         }
         .onChange(of: destinationManager.destinations) { destinations in
           // Keep LocationManager aware of the latest destination list
           locationManager.destinations = destinations
+          // Request authorization the first time a destination is added.
+          if !destinations.isEmpty {
+            locationManager.requestAuthorization()
+          }
         }
         .onChange(of: scenePhase) { phase in
           // Resume monitoring when the app becomes active again.
