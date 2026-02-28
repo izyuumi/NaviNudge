@@ -53,8 +53,8 @@ final class LocationManager: NSObject, ObservableObject {
     super.init()
     manager.delegate = self
     authorizationStatus = manager.authorizationStatus
-    manager.desiredAccuracy = kCLLocationAccuracyBestForNavigation
-    manager.distanceFilter = 5 // receive updates roughly every 5 m
+    manager.desiredAccuracy = kCLLocationAccuracyNearestTenMeters
+    manager.distanceFilter = 10 // receive updates roughly every 10 m
   }
 
   func requestAuthorization() {
