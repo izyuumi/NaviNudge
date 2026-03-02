@@ -8,6 +8,7 @@ struct EditDestinationView: View {
 
     @State private var name: String
     @State private var icon: String
+    @State private var eventType: EventType
     @StateObject private var search = LocalSearchViewModel()
     @State private var selectedItem: MKMapItem? = nil
     @State private var showingEmojiPicker: Bool = false
@@ -17,6 +18,7 @@ struct EditDestinationView: View {
         self.onSave = onSave
         _name = State(initialValue: destination.name)
         _icon = State(initialValue: destination.icon)
+        _eventType = State(initialValue: destination.eventType)
     }
 
     private var isValid: Bool {
@@ -38,6 +40,26 @@ struct EditDestinationView: View {
                     }
                     .sheet(isPresented: $showingEmojiPicker) {
                         EmojiPickerView(selection: $icon)
+                    }
+                }
+
+                Section(header: Text("Event Type")) {
+                    Picker("Event Type", selection: $eventType) {
+                        ForEach(EventType.allCases) { type in
+                            Label(type.label, systemImage: type.symbol)
+                                .tag(type)
+                        }
+                    }
+                    .pickerStyle(.menu)
+
+                    if eventType != .none {
+                        HStack {
+                            Image(systemName: "clock.badge.checkmark")
+                                .foregroundStyle(.accentColor)
+                            Text("Base arrival buffer: \(eventType.baseBufferMinutes) min")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
 
@@ -118,7 +140,8 @@ struct EditDestinationView: View {
             id: destination.id,
             name: name.trimmingCharacters(in: .whitespaces),
             icon: icon,
-            coordinate: CLLocationCoordinate2D(latitude: newCoord.latitude, longitude: newCoord.longitude)
+            coordinate: CLLocationCoordinate2D(latitude: newCoord.latitude, longitude: newCoord.longitude),
+            eventType: eventType
         )
         onSave(updated)
         dismiss()

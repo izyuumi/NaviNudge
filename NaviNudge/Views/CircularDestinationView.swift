@@ -1,12 +1,21 @@
 import SwiftUI
 import UIKit
 import CoreLocation
+import MapKit
 
 struct CircularDestinationView: View {
     @EnvironmentObject private var destinationManager: DestinationManager
+    @EnvironmentObject private var locationManager: LocationManager
     @Environment(\.openURL) private var openURL
 
     @State private var transport: TransportMode = .driving
+
+    // Smart arrival buffer
+    @State private var pendingRoute: (source: Endpoint, target: Endpoint)? = nil
+    @State private var bufferResult: ArrivalBufferResult? = nil
+    @State private var isCalculatingBuffer: Bool = false
+    @State private var showingAdvisory: Bool = false
+    private let bufferCalculator = ArrivalBufferCalculator()
 
     // Interaction state moved into RingView to simplify body
 
@@ -17,7 +26,7 @@ struct CircularDestinationView: View {
                     RingView(
                         size: geo.size,
                         onComplete: { source, target in
-                            openAppleMaps(from: source, to: target)
+                            initiateNavigation(from: source, to: target)
                         },
                         onRequestManage: { showingManage = true },
                         onRequestEdit: { dest in editingDestination = dest }
@@ -58,11 +67,74 @@ struct CircularDestinationView: View {
                 destinationManager.update(updated)
             }
         }
+        .sheet(isPresented: $showingAdvisory) {
+            if let result = bufferResult,
+               let route = pendingRoute,
+               case .saved(let dest) = route.target {
+                DepartureAdvisoryView(
+                    destination: dest,
+                    result: result,
+                    onNavigate: {
+                        openAppleMaps(from: route.source, to: route.target)
+                    }
+                )
+            }
+        }
+        .overlay {
+            if isCalculatingBuffer {
+                ZStack {
+                    Color.black.opacity(0.35).ignoresSafeArea()
+                    VStack(spacing: 12) {
+                        ProgressView()
+                            .tint(.white)
+                            .scaleEffect(1.4)
+                        Text("Checking traffic…")
+                            .font(.subheadline)
+                            .foregroundStyle(.white)
+                    }
+                    .padding(24)
+                    .background(.ultraThinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                }
+            }
+        }
     }
 
     @State private var showingManage = false
     @State private var showingSettings = false
     @State private var editingDestination: Destination? = nil
+
+    // MARK: - Smart Buffer Navigation
+
+    /// Starts the navigation flow: if the destination has an event type,
+    /// calculate traffic and show the departure advisory; otherwise open Maps directly.
+    private func initiateNavigation(from source: Endpoint, to target: Endpoint) {
+        // Only show advisory when navigating TO a saved destination with an event type
+        if case .saved(let dest) = target, dest.eventType != .none {
+            pendingRoute = (source, target)
+            isCalculatingBuffer = true
+            let originCoord = originCoordinate(for: source)
+            bufferCalculator.calculate(from: originCoord, to: dest) { result in
+                self.bufferResult = result
+                self.isCalculatingBuffer = false
+                self.showingAdvisory = true
+            }
+        } else {
+            openAppleMaps(from: source, to: target)
+        }
+    }
+
+    /// Returns the coordinate for a given endpoint.
+    /// Uses the real user location for `.current`; falls back to Apple HQ if unavailable.
+    private func originCoordinate(for endpoint: Endpoint) -> CLLocationCoordinate2D {
+        switch endpoint {
+        case .current:
+            return locationManager.coordinate
+              ?? CLLocationCoordinate2D(latitude: 37.3318, longitude: -122.0312)
+        case .saved(let dest):
+            return dest.coordinate
+        }
+    }
 
     private func openAppleMaps(from source: Endpoint, to destination: Endpoint) {
         var comps = URLComponents()
