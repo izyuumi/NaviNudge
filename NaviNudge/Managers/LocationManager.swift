@@ -69,7 +69,6 @@ final class LocationManager: NSObject, ObservableObject {
     case .authorizedWhenInUse:
       // Step 2: upgrade to Always (will show the second prompt).
       if !didRequestAlwaysUpgrade {
-        didRequestAlwaysUpgrade = true
         manager.requestAlwaysAuthorization()
       }
     case .authorizedAlways:
