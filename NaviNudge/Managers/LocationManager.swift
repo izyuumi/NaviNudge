@@ -159,12 +159,15 @@ extension LocationManager: CLLocationManagerDelegate {
       self.authorizationStatus = manager.authorizationStatus
       switch manager.authorizationStatus {
       case .authorizedAlways:
+        self.didRequestAlwaysUpgrade = true
         self.startUpdating()
       case .authorizedWhenInUse:
         // Start foreground updates immediately, then request the upgrade to Always.
         self.startUpdating()
         if !self.didRequestAlwaysUpgrade {
-          self.didRequestAlwaysUpgrade = true
+          // Don't set the flag here — iOS may defer the Always prompt.
+          // We only mark it consumed once we actually receive .authorizedAlways,
+          // so requestAuthorization() can retry if the prompt was suppressed.
           manager.requestAlwaysAuthorization()
         }
       case .denied, .restricted:
