@@ -80,12 +80,12 @@ final class ArrivalBufferCalculator {
   /// - Parameters:
   ///   - origin: Starting coordinate (use current user location or a saved place).
   ///   - destination: The `Destination` the user is navigating to.
-  ///   - transportType: MapKit transport type (defaults to automobile).
+  ///   - transportType: MapKit transport type for the selected navigation mode.
   ///   - completion: Called on the main actor with the result, or `nil` if routing failed.
   func calculate(
     from origin: CLLocationCoordinate2D,
     to destination: Destination,
-    transportType: MKDirectionsTransportType = .automobile,
+    transportType: MKDirectionsTransportType,
     completion: @escaping @MainActor (ArrivalBufferResult?) -> Void
   ) {
     let request = buildDirectionsRequest(

@@ -27,6 +27,7 @@ For development setup, build commands, architecture details, and coding guidelin
 
 ## Notes
 - Cycling directions are not exposed as a distinct `MKDirectionsTransportType`. The UI includes driving, walking, and transit. You can still open Apple Maps with cycling via URL, but MapKit’s in-app route calculation does not return cycling.
+- The departure advisory only appears when MapKit can calculate an ETA for the selected mode and origin. If current location is unavailable, or cycling is selected, the app opens Apple Maps directly instead of showing a guessed ETA.
 - For route overlays, consider a `UIViewRepresentable` wrapping `MKMapView` to draw polylines.
 
 ## Quick Start in Xcode
@@ -38,4 +39,3 @@ For development setup, build commands, architecture details, and coding guidelin
 - Gesture: press a node to start (center = Current Location or any saved place), drag to another node, then release to open Apple Maps prefilled from → to.
 - Transport picker maps to Apple Maps `dirflg`: `d` (driving), `w` (walking), `r` (transit), `b` (biking).
 - Deeplink format used: `https://maps.apple.com/?saddr=<lat,lon|Current%20Location>&daddr=<lat,lon>&dirflg=<flag>`.
-

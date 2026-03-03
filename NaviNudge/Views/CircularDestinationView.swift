@@ -111,10 +111,21 @@ struct CircularDestinationView: View {
     private func initiateNavigation(from source: Endpoint, to target: Endpoint) {
         // Only show advisory when navigating TO a saved destination with an event type
         if case .saved(let dest) = target, dest.eventType != .none {
+            guard
+                let originCoord = originCoordinate(for: source),
+                let transportType = transport.mapKitTransportType
+            else {
+                openAppleMaps(from: source, to: target)
+                return
+            }
+
             pendingRoute = (source, target)
             isCalculatingBuffer = true
-            let originCoord = originCoordinate(for: source)
-            bufferCalculator.calculate(from: originCoord, to: dest) { result in
+            bufferCalculator.calculate(
+                from: originCoord,
+                to: dest,
+                transportType: transportType
+            ) { result in
                 self.bufferResult = result
                 self.isCalculatingBuffer = false
                 self.showingAdvisory = true
@@ -125,12 +136,11 @@ struct CircularDestinationView: View {
     }
 
     /// Returns the coordinate for a given endpoint.
-    /// Uses the real user location for `.current`; falls back to Apple HQ if unavailable.
-    private func originCoordinate(for endpoint: Endpoint) -> CLLocationCoordinate2D {
+    /// Uses the real user location for `.current`.
+    private func originCoordinate(for endpoint: Endpoint) -> CLLocationCoordinate2D? {
         switch endpoint {
         case .current:
             return locationManager.coordinate
-              ?? CLLocationCoordinate2D(latitude: 37.3318, longitude: -122.0312)
         case .saved(let dest):
             return dest.coordinate
         }
@@ -506,12 +516,22 @@ private struct RingView: View {
 private enum TransportMode: CaseIterable, Identifiable, Hashable {
     case driving, walking, transit, biking
     var id: Self { self }
+
     var dirflg: String {
         switch self {
         case .driving: return "d"
         case .walking: return "w"
         case .transit: return "r"
         case .biking: return "b"
+        }
+    }
+
+    var mapKitTransportType: MKDirectionsTransportType? {
+        switch self {
+        case .driving: return .automobile
+        case .walking: return .walking
+        case .transit: return .transit
+        case .biking: return nil
         }
     }
 }
