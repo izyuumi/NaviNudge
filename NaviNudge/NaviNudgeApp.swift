@@ -2,14 +2,43 @@ import SwiftUI
 
 @main
 struct NaviNudgeApp: App {
-    @StateObject private var destinationManager = DestinationManager()
-    @Environment(\.scenePhase) private var scenePhase
+  @StateObject private var destinationManager = DestinationManager()
+  @StateObject private var locationManager = LocationManager()
+  @Environment(\.scenePhase) private var scenePhase
 
-    var body: some Scene {
-        WindowGroup {
-            ContentView()
-                .environmentObject(destinationManager)
+  var body: some Scene {
+    WindowGroup {
+      ContentView()
+        .environmentObject(destinationManager)
+        .environmentObject(locationManager)
+        .onAppear {
+          // Sync destinations on first launch; LocationManager decides whether monitoring should run.
+          locationManager.destinations = destinationManager.destinations
+          // Only request authorization if the user already has saved destinations.
+          // This avoids burning the one-shot iOS permission prompt before the feature is relevant.
+          if !destinationManager.destinations.isEmpty {
+            locationManager.requestAuthorization()
+          }
+        }
+        .onChange(of: destinationManager.destinations) { _, destinations in
+          // Keep LocationManager aware of the latest destination list
+          locationManager.destinations = destinations
+          // Request authorization the first time a destination is added.
+          if !destinations.isEmpty {
+            locationManager.requestAuthorization()
+          }
+        }
+        .onChange(of: scenePhase) { _, phase in
+          // Resume monitoring when the app becomes active again.
+          switch phase {
+          case .active:
+            locationManager.startUpdating()
+          case .background, .inactive:
+            break
+          @unknown default:
+            break
+          }
         }
     }
-
+  }
 }
