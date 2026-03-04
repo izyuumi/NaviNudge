@@ -7,10 +7,15 @@ struct SettingsView: View {
 
     @State private var showingManage = false
     @State private var confirmClear = false
+    @AppStorage("favoritesRequireConfirm") private var favoritesRequireConfirm = false
 
     var body: some View {
         NavigationStack {
             List {
+                Section("Favorites") {
+                    Toggle("Confirm before navigating", isOn: $favoritesRequireConfirm)
+                }
+
                 Section("Destinations") {
                     Button("Manage Destinations") { showingManage = true }
                     Button(role: .destructive) {

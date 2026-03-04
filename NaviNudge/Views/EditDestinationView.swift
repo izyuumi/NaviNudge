@@ -118,7 +118,8 @@ struct EditDestinationView: View {
             id: destination.id,
             name: name.trimmingCharacters(in: .whitespaces),
             icon: icon,
-            coordinate: CLLocationCoordinate2D(latitude: newCoord.latitude, longitude: newCoord.longitude)
+            coordinate: CLLocationCoordinate2D(latitude: newCoord.latitude, longitude: newCoord.longitude),
+            preferredSlotIndex: destination.preferredSlotIndex
         )
         onSave(updated)
         dismiss()

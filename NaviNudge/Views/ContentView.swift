@@ -2,8 +2,18 @@ import SwiftUI
 
 struct ContentView: View {
     var body: some View {
-        NavigationStack {
-            CircularDestinationView()
+        TabView {
+            NavigationStack {
+                CircularDestinationView()
+            }
+            .tabItem {
+                Label("Home", systemImage: "circle.grid.cross")
+            }
+
+            FavoritesView()
+                .tabItem {
+                    Label("Favorites", systemImage: "star.fill")
+                }
         }
     }
 }
