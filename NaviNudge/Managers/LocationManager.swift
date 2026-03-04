@@ -48,6 +48,14 @@ extension LocationManager: CLLocationManagerDelegate {
   }
 
   nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-    Task { @MainActor in self.authorizationStatus = manager.authorizationStatus }
+    Task { @MainActor in
+      self.authorizationStatus = manager.authorizationStatus
+      // Start updates now that permission has been granted. This handles first-launch
+      // where startUpdatingLocation() was called before authorization was determined.
+      if manager.authorizationStatus == .authorizedWhenInUse
+          || manager.authorizationStatus == .authorizedAlways {
+        self.startUpdatingLocation()
+      }
+    }
   }
 }
