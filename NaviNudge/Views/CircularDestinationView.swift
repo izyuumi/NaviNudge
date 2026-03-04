@@ -15,7 +15,7 @@ struct CircularDestinationView: View {
     @State private var bufferResult: ArrivalBufferResult? = nil
     @State private var isCalculatingBuffer: Bool = false
     @State private var showingAdvisory: Bool = false
-    private let bufferCalculator = ArrivalBufferCalculator()
+    @State private var bufferCalculator = ArrivalBufferCalculator()
 
     // Interaction state moved into RingView to simplify body
 

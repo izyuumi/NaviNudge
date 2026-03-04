@@ -15,6 +15,16 @@ struct NaviNudgeApp: App {
                     locationManager.requestWhenInUseAuthorization()
                     locationManager.startUpdatingLocation()
                 }
+                .onChange(of: scenePhase) { _, newPhase in
+                    switch newPhase {
+                    case .active:
+                        locationManager.startUpdatingLocation()
+                    case .background:
+                        locationManager.stopUpdatingLocation()
+                    default:
+                        break
+                    }
+                }
         }
     }
 
