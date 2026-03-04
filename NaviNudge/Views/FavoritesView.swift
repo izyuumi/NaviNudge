@@ -138,9 +138,15 @@ private struct FavoriteRow: View {
     let onNavigate: () -> Void
     let onEdit: () -> Void
 
+    @Environment(\.editMode) private var editMode
+
+    private var isEditing: Bool { editMode?.wrappedValue.isEditing == true }
+
     var body: some View {
         HStack(spacing: 14) {
-            // Tappable icon + name area — acts as the primary navigate action
+            // Tappable icon + name area — acts as the primary navigate action.
+            // Disabled during edit mode so drag-to-reorder gestures don't accidentally
+            // trigger navigation.
             Button(action: onNavigate) {
                 HStack(spacing: 14) {
                     // Icon bubble
@@ -157,6 +163,7 @@ private struct FavoriteRow: View {
                 }
             }
             .buttonStyle(.plain)
+            .disabled(isEditing)
             .accessibilityLabel(destination.name)
             .accessibilityHint("Tap to navigate")
 
@@ -171,14 +178,16 @@ private struct FavoriteRow: View {
             .padding(.trailing, 4)
             .accessibilityLabel("Edit \(destination.name)")
 
-            // Navigation button (secondary shortcut)
-            Button(action: onNavigate) {
-                Image(systemName: "arrow.triangle.turn.up.right.circle.fill")
-                    .font(.system(size: 30))
-                    .foregroundStyle(.blue)
+            // Navigation arrow — hidden in edit mode (reorder/delete mode)
+            if !isEditing {
+                Button(action: onNavigate) {
+                    Image(systemName: "arrow.triangle.turn.up.right.circle.fill")
+                        .font(.system(size: 30))
+                        .foregroundStyle(.blue)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Navigate to \(destination.name)")
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Navigate to \(destination.name)")
         }
         .padding(.vertical, 4)
     }
